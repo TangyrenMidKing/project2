@@ -1,4 +1,4 @@
-# project2
+# Project2
 Cop3402 System Software
 
 # Authors
