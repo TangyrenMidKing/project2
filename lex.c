@@ -31,6 +31,10 @@ char reserved[14][10] = {"const", "var", "procedure", "call", "if", "then", "els
 
 void printerror(int type);
 void printtokens();
+int token_function(char* str);
+char* left_string(char* str, char* split_point);
+int isReserved(char* str);
+int isSymbols(char c);
 
 lexeme *lexanalyzer(char *input)
 {
@@ -38,7 +42,7 @@ lexeme *lexanalyzer(char *input)
 	lex_index = 0;
 	char* ptr = input;
 
-	while (ptr != '\0')
+	while (ptr[0] != '\0')
 	{
 			// Start with white space
 			if (iscntrl(ptr[0]) == 0)
@@ -52,7 +56,7 @@ lexeme *lexanalyzer(char *input)
         char* p = ptr;
         while (isdigit (p[0]))
           p++;
-        char* num = split_string(ptr,p);
+        char* num = left_string(ptr,p);
         // Name too long.
         if (strlen(num) > MAX_DIGITS)
         {
@@ -83,7 +87,7 @@ lexeme *lexanalyzer(char *input)
         char* p = ptr;
         while (isalpha(p[0]) | isdigit(p[0]))
           p++;
-        char* str = split_string(ptr,p);
+        char* str = left_string(ptr,p);
         // Name too long.
         if (strlen(str) > MAX_IDENT)
         {
@@ -110,20 +114,174 @@ lexeme *lexanalyzer(char *input)
 			}
 
 			// Start with special symbols
-			else if (isSymbols(ptr))
+			else if (isSymbols(ptr[0]))
 			{
-        // Non Common Symbol.
-        if (ptr[0] != '/' & strlen(ptr) > 0 & ptr[1] != '*')
+        // Maybe Comment Symbol.
+        if (ptr[0] == '/')
         {
+          if (strlen(ptr) > 1 && ptr[1] == '*')
+          {
+            while (ptr[1] != '\0' & (ptr[0] != '*' | ptr[1] != '/'))
+              ptr++;
 
+            // Neverending comment
+            if (strlen(ptr) == 0)
+            {
+              printerror(5);
+              free(list);
+              return NULL;
+            }
+            // Comment!
+            else
+              ptr++;
+          }
+          // slash symbol
+          else
+          {
+            strcpy(list[lex_index].name , "/");
+            list[lex_index].value = UNDEFINED;
+            list[lex_index].type = slashsym;
+            ptr++;
+          }
         }
-        //  Common Symbol.
+        // Non Comment Symbol.
         else
         {
-
+          if (ptr[0] == '<')
+          {
+            ptr++;
+            // <>
+            if (ptr[0] == '>')
+            {
+              strcpy(list[lex_index].name , "<>");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = neqsym;
+              ptr++;
+            }
+            // <=
+            else if (ptr[0] == '=')
+            {
+              strcpy(list[lex_index].name , "<=");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = leqsym;
+              ptr++;
+            }
+            // <
+            else
+            {
+              strcpy(list[lex_index].name , "<");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = lessym;
+              ptr++;
+            }
+          }
+          else if (ptr[0] == '>')
+          {
+            ptr++;
+            // >=
+            if (ptr[0] == '=')
+            {
+              strcpy(list[lex_index].name , ">=");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = geqsym;
+              ptr++;
+            }
+            // >
+            else
+            {
+              strcpy(list[lex_index].name , ">");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = gtrsym;
+              ptr++;
+            }
+          }
+          else if (ptr[0] == ':')
+          {
+            ptr++;
+            // :=
+            if (ptr[0] == '=')
+            {
+              strcpy(list[lex_index].name , ":=");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = becomessym;
+              ptr++;
+            }
+            // :
+            else
+            {
+              strcpy(list[lex_index].name , ":");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = semicolonsym;
+              ptr++;
+            }
+          }
+          else
+          {
+            if (ptr[0] == '%')
+            {
+              strcpy(list[lex_index].name , "%");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = modsym;
+              ptr++;
+            }
+            else if (ptr[0] == '*')
+            {
+              strcpy(list[lex_index].name , "*");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = multsym;
+              ptr++;
+            }
+            else if (ptr[0] == '+')
+            {
+              strcpy(list[lex_index].name , "+");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = plussym;
+              ptr++;
+            }
+            else if (ptr[0] == '-')
+            {
+              strcpy(list[lex_index].name , "-");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = minussym;
+              ptr++;
+            }
+            else if (ptr[0] == ')')
+            {
+              strcpy(list[lex_index].name , ")");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = rparentsym;
+              ptr++;
+            }
+            else if (ptr[0] == '(')
+            {
+              strcpy(list[lex_index].name , "(");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = lparentsym;
+              ptr++;
+            }
+            else if (ptr[0] == ',')
+            {
+              strcpy(list[lex_index].name , ",");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = commasym;
+              ptr++;
+            }
+            else if (ptr[0] == '.')
+            {
+              strcpy(list[lex_index].name , ".");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = periodsym;
+              ptr++;
+            }
+            else
+            {
+              printerror(1);
+              free(list);
+              return NULL;
+            }
+          }
         }
 			}
-
 			// Unrecognized Sysmbels.
 			else
 			{
@@ -131,6 +289,8 @@ lexeme *lexanalyzer(char *input)
         free(list);
         return NULL;
 			}
+
+      lex_index++;
 	}
 
 	return list;
@@ -148,7 +308,7 @@ char* left_string(char* str, char* split_point)
   return res;
 }
 
-char* token_function(char* str)
+int token_function(char* str)
 {
   if (strcmp(str, "const") == 0)
     return constsym;
@@ -179,6 +339,26 @@ char* token_function(char* str)
   // Error
   else if (strcmp(str, "read") == 0)
     return 0;
+}
+
+int isReserved(char* str)
+{
+  for (int i = 0; i < 14; i++)
+  {
+    if (strcmp(str, reserved[i]) == 0)
+      return 1;
+  }
+  return 0;
+}
+
+int isSymbols(char c)
+{
+  for (int i = 0; i < 14; i++)
+  {
+    if (c == symbols[i])
+      return 1;
+  }
+  return 0;
 }
 
 void printtokens()
