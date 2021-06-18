@@ -1,8 +1,12 @@
+// Shibo Ding
+// Jiahao Zhu
+// Cop3402 Summer project2
+
 /*
 	This is the lex skeleton for the UCF Summer 2021 Systems Software Project
 	Implement the function lexanalyzer, add as many functions and global
 	variables as desired, but do not alter printerror or printtokens.
-	Include your name (and your partner's name) in this comment in order to 
+	Include your name (and your partner's name) in this comment in order to
 	earn the points for compiling
 */
 
@@ -11,20 +15,170 @@
 #include <ctype.h>
 #include <string.h>
 #include "compiler.h"
-
+#define MAX_LEXEME 500
+#define MAX_IDENT 11
+#define MAX_DIGITS 5
+#define UNDEFINED -1
 
 lexeme *list;
 int lex_index;
+char symbols[14] =  {'=', '>' , '<' , '%' , '*' , '/' , '+' , '-' , '(' , ')' ,
+              ',' , '.' , ';' ,  ':'};
+char reserved[14][10] = {"const", "var", "procedure", "call", "if", "then", "else", "while",
+						"do", "begin", "end", "read", "write", "odd"};
+
+
 
 void printerror(int type);
 void printtokens();
 
 lexeme *lexanalyzer(char *input)
 {
-	list = malloc(500 * sizeof(lexeme));
+	list = malloc(MAX_LEXEME * sizeof(lexeme));
 	lex_index = 0;
-	
+	char* ptr = input;
+
+	while (ptr != '\0')
+	{
+			// Start with white space
+			if (iscntrl(ptr[0]) == 0)
+			{
+				ptr++;
+			}
+
+			// Start with number.
+			else if (isdigit(ptr[0]))
+			{
+        char* p = ptr;
+        while (isdigit (p[0]))
+          p++;
+        char* num = split_string(ptr,p);
+        // Name too long.
+        if (strlen(num) > MAX_DIGITS)
+        {
+          printerror(3);
+          free(list);
+          return NULL;
+        }
+
+        // If a number is followed by an identifier with no whitespace,
+        // it is an invalid identifier error.
+        if ( strlen(p) > 0 & isdigit(p[1]) )
+        {
+          printerror(2);
+          free(list);
+          return NULL;
+        }
+
+        strcpy(list[lex_index].name , num);
+        list[lex_index].value = atoi(num);
+        list[lex_index].type = numbersym;
+
+        ptr = p;
+			}
+
+			// Start with char
+			else if (isalpha(ptr[0]))
+			{
+        char* p = ptr;
+        while (isalpha(p[0]) | isdigit(p[0]))
+          p++;
+        char* str = split_string(ptr,p);
+        // Name too long.
+        if (strlen(str) > MAX_IDENT)
+        {
+          printerror(4);
+          free(list);
+          return NULL;
+        }
+        // reserved
+        if (isReserved(str))
+        {
+          strcpy(list[lex_index].name , str);
+          list[lex_index].value = UNDEFINED;
+          list[lex_index].type = token_function(str);
+        }
+        // identifier
+        else
+        {
+          strcpy(list[lex_index].name , str);
+          list[lex_index].value = UNDEFINED;
+          list[lex_index].type = identsym;
+        }
+
+        ptr = p;
+			}
+
+			// Start with special symbols
+			else if (isSymbols(ptr))
+			{
+        // Non Common Symbol.
+        if (ptr[0] != '/' & strlen(ptr) > 0 & ptr[1] != '*')
+        {
+
+        }
+        //  Common Symbol.
+        else
+        {
+
+        }
+			}
+
+			// Unrecognized Sysmbels.
+			else
+			{
+        printerror(0);
+        free(list);
+        return NULL;
+			}
+	}
+
 	return list;
+}
+
+char* left_string(char* str, char* split_point)
+{
+  int len = strlen(str);
+  int right = strlen(split_point);
+  int left = len - right;
+
+  char* res = malloc(sizeof(char)*left);
+  strncpy(res,str, left);
+
+  return res;
+}
+
+char* token_function(char* str)
+{
+  if (strcmp(str, "const") == 0)
+    return constsym;
+  else if (strcmp(str, "var") == 0)
+    return varsym;
+  else if (strcmp(str, "procedure") == 0)
+    return procsym;
+  else if (strcmp(str, "call") == 0)
+    return callsym;
+  else if (strcmp(str, "if") == 0)
+    return ifsym;
+  else if (strcmp(str, "then") == 0)
+    return thensym;
+  else if (strcmp(str, "while") == 0)
+    return whilesym;
+  else if (strcmp(str, "do") == 0)
+    return dosym;
+  else if (strcmp(str, "begin") == 0)
+    return beginsym;
+  else if (strcmp(str, "end") == 0)
+    return endsym;
+  else if (strcmp(str, "read") == 0)
+    return readsym;
+  else if (strcmp(str, "write") == 0)
+    return writesym;
+  else if (strcmp(str, "odd") == 0)
+    return oddsym;
+  // Error
+  else if (strcmp(str, "read") == 0)
+    return 0;
 }
 
 void printtokens()
@@ -167,7 +321,7 @@ void printerror(int type)
 		printf("Lexical Analyzer Error: Neverending Comment\n");
 	else
 		printf("Implementation Error: Unrecognized Error Type\n");
-	
+
 	free(list);
 	return;
 }
