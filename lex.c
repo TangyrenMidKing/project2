@@ -15,7 +15,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "compiler.h"
-#define MAX_LEXEME 500
+#define MAX_LEXEME 300
 #define MAX_IDENT 11
 #define MAX_DIGITS 5
 #define UNDEFINED -1
@@ -45,32 +45,30 @@ lexeme *lexanalyzer(char *input)
 	while (ptr[0] != '\0')
 	{
 			// Start with white space
-			if (iscntrl(ptr[0]) == 0)
+			if (iscntrl(ptr[0]) != 0)
 			{
 				ptr++;
 			}
 
 			// Start with number.
-			else if (isdigit(ptr[0]))
+			else if (isdigit(ptr[0]) != 0)
 			{
         char* p = ptr;
-        while (isdigit (p[0]))
+        while (isdigit (p[0]) != 0)
           p++;
         char* num = left_string(ptr,p);
         // Name too long.
         if (strlen(num) > MAX_DIGITS)
         {
           printerror(3);
-          free(list);
           return NULL;
         }
 
         // If a number is followed by an identifier with no whitespace,
         // it is an invalid identifier error.
-        if ( strlen(p) > 0 & isdigit(p[1]) )
+        if ( (strlen(p) > 0) & (isdigit(p[1]) != 0) )
         {
           printerror(2);
-          free(list);
           return NULL;
         }
 
@@ -82,17 +80,17 @@ lexeme *lexanalyzer(char *input)
 			}
 
 			// Start with char
-			else if (isalpha(ptr[0]))
+			else if (isalpha(ptr[0]) != 0)
 			{
         char* p = ptr;
-        while (isalpha(p[0]) | isdigit(p[0]))
+        while ((isalpha(p[0]) != 0) | (isdigit(p[0]) != 0))
           p++;
         char* str = left_string(ptr,p);
         // Name too long.
         if (strlen(str) > MAX_IDENT)
         {
           printerror(4);
-          free(list);
+
           return NULL;
         }
         // reserved
@@ -128,7 +126,7 @@ lexeme *lexanalyzer(char *input)
             if (strlen(ptr) == 0)
             {
               printerror(5);
-              free(list);
+
               return NULL;
             }
             // Comment!
@@ -206,13 +204,27 @@ lexeme *lexanalyzer(char *input)
               list[lex_index].type = becomessym;
               ptr++;
             }
-            // :
+            // Error
             else
             {
-              strcpy(list[lex_index].name , ":");
+              printerror(1);
+              return NULL;
+            }
+          }
+          else if (ptr[0] == '=')
+          {
+            ptr++;
+            if (ptr[0] == '=')
+            {
+              strcpy(list[lex_index].name , "==");
               list[lex_index].value = UNDEFINED;
-              list[lex_index].type = semicolonsym;
+              list[lex_index].type = eqlsym;
               ptr++;
+            }
+            else
+            {
+              printerror(1);
+              return NULL;
             }
           }
           else
@@ -273,10 +285,17 @@ lexeme *lexanalyzer(char *input)
               list[lex_index].type = periodsym;
               ptr++;
             }
+            else if (ptr[0] == ';')
+            {
+              strcpy(list[lex_index].name , ";");
+              list[lex_index].value = UNDEFINED;
+              list[lex_index].type = semicolonsym;
+              ptr++;
+            }
             else
             {
               printerror(1);
-              free(list);
+
               return NULL;
             }
           }
@@ -286,7 +305,7 @@ lexeme *lexanalyzer(char *input)
 			else
 			{
         printerror(0);
-        free(list);
+
         return NULL;
 			}
 
@@ -502,6 +521,6 @@ void printerror(int type)
 	else
 		printf("Implementation Error: Unrecognized Error Type\n");
 
-	free(list);
+
 	return;
 }
