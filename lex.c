@@ -57,6 +57,7 @@ lexeme *lexanalyzer(char *input)
         while (isdigit (p[0]) != 0)
           p++;
         char* num = left_string(ptr,p);
+
         // Name too long.
         if (strlen(num) > MAX_DIGITS)
         {
@@ -90,7 +91,6 @@ lexeme *lexanalyzer(char *input)
         if (strlen(str) > MAX_IDENT)
         {
           printerror(4);
-
           return NULL;
         }
         // reserved
@@ -117,23 +117,29 @@ lexeme *lexanalyzer(char *input)
         // Maybe Comment Symbol.
         if (ptr[0] == '/')
         {
-          if (strlen(ptr) > 1 && ptr[1] == '*')
+          ptr++;
+          // Comment!
+          if (ptr[0] == '*')
           {
-            while (ptr[1] != '\0' & (ptr[0] != '*' | ptr[1] != '/'))
+            ptr++;
+
+            while ((ptr[0] != '\0') & ((ptr[0] != '*') | (ptr[1] != '/')))
               ptr++;
 
-            // Neverending comment
-            if (strlen(ptr) == 0)
+            if ((ptr[0] == '*') && ( ptr[1] == '/'))
+            {
+              ptr += 2;
+              lex_index--;
+            }
+
+            // Error!
+            else
             {
               printerror(5);
-
               return NULL;
             }
-            // Comment!
-            else
-              ptr++;
           }
-          // slash symbol
+          // Slash!
           else
           {
             strcpy(list[lex_index].name , "/");
@@ -170,7 +176,6 @@ lexeme *lexanalyzer(char *input)
               strcpy(list[lex_index].name , "<");
               list[lex_index].value = UNDEFINED;
               list[lex_index].type = lessym;
-              ptr++;
             }
           }
           else if (ptr[0] == '>')
@@ -190,7 +195,6 @@ lexeme *lexanalyzer(char *input)
               strcpy(list[lex_index].name , ">");
               list[lex_index].value = UNDEFINED;
               list[lex_index].type = gtrsym;
-              ptr++;
             }
           }
           else if (ptr[0] == ':')
@@ -295,7 +299,6 @@ lexeme *lexanalyzer(char *input)
             else
             {
               printerror(1);
-
               return NULL;
             }
           }
@@ -305,13 +308,13 @@ lexeme *lexanalyzer(char *input)
 			else
 			{
         printerror(0);
-
         return NULL;
 			}
 
       lex_index++;
 	}
 
+  printtokens();
 	return list;
 }
 
@@ -345,6 +348,8 @@ int token_function(char* str)
     return whilesym;
   else if (strcmp(str, "do") == 0)
     return dosym;
+  else if (strcmp(str, "else") == 0)
+    return elsesym;
   else if (strcmp(str, "begin") == 0)
     return beginsym;
   else if (strcmp(str, "end") == 0)
@@ -356,7 +361,7 @@ int token_function(char* str)
   else if (strcmp(str, "odd") == 0)
     return oddsym;
   // Error
-  else if (strcmp(str, "read") == 0)
+  else
     return 0;
 }
 
@@ -521,6 +526,6 @@ void printerror(int type)
 	else
 		printf("Implementation Error: Unrecognized Error Type\n");
 
-
+  free(list);
 	return;
 }
